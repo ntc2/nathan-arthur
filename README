@@ -1,0 +1,14 @@
+Installing Curry on Ubuntu
+==========================
+
+Warning: it appears you can't move the pakcs dir after running make,
+so make sure the pakcs dir is where you want it.
+
+$ sudo aptitude install rlwrap swi-prolog
+$ wget http://www.informatik.uni-kiel.de/~pakcs/download/pakcs_Linux.tar.gz
+$ tar xf pakcs_Linux.tar.gz
+$ cd pakcs
+$ make # and enter "y" at the prompt
+
+The curry executable is now at ./bin/pakcs.  There is an emacs mode in
+./tools/emacs.
