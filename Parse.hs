@@ -8,8 +8,10 @@ import Control.Applicative hiding ((<|>), many)
 
 -- For each contructor the first int is the node number and
 -- the other ints are edge numbers with the first being the trunk
-data PNode = PEndPoint Int Int
-           | PSwitch Int Int Int Int
+type PN = Int -- node type in parse input
+type PS = Int -- segment type in parse input
+data PNode = PEndPoint PN PS
+           | PSwitch PN PS PS PS
              deriving Show
 
 -- ??? how to do lexeme version tim described (Text.Parsec.Token) ?
@@ -31,10 +33,10 @@ pSwitch = PSwitch <$> num_ ':' -- ':'
                   <*> num_ ';' 
                   <*> num_ ',' 
                   <*> num
-line = try pSwitch <|> pEndPoint
+pNode = try pSwitch <|> pEndPoint
 
 -- Parse each line and return a list.
-lines =  (line `sepEndBy` spaces) <* eof
+lines =  (pNode `sepEndBy` spaces) <* eof
 
 -- Parse the text in a file and return a parsed list in the IO monad.
 file f = do p <- parseFromFile lines f
