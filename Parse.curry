@@ -34,8 +34,8 @@ parseFile fn = do
                -- This forces s to be evaluated which it needs to be 
                -- or the results of the following are incorrect. Comment
                -- it out and you will get "No Solutions". This is a 
-	       -- PAKCS bug I am almost sure. Probably related to the 
-	       -- interation of lazy IO with non-determinism.
+               -- PAKCS bug I am almost sure. Probably related to the 
+               -- interaction of lazy IO with non-determinism.
                (last s) `seq` done 
 
                getSomeValue $ parse (filter (/='\r') s)
