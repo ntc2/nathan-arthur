@@ -1,3 +1,4 @@
+{-# LANGUAGE TypeSynonymInstances #-}
 module Graph where
 
 import Data.List (groupBy, sort)
@@ -7,13 +8,9 @@ import qualified Data.Map as M
 import Parse
 
 type Segment = (PN, PN)
-data Dir = F | B -- direction
+data Dir = F | B deriving (Eq,Show) -- direction
 type Node = (Segment, Dir)
 type Edge = (Node, Node)
-
--- return the other end of the segment
-other :: Segment -> PN -> PN
-other (a,b) n = a+b - n -- if a == n then b else a
 
 -- map segment numbers (PS) to their node pair
 makeSegmentMap :: [PNode] -> M.Map PS Segment
@@ -23,7 +20,8 @@ makeSegmentMap ps = m where
   extract (PEndPoint n s)     = [(s,n)]
   extract (PSwitch n t b1 b2) = [(t,n), (b1,n), (b2,n)]
 
-  -- group the extracted segment info by segment
+  -- group the extracted segment info by segment:
+  --   [[(1,a1),(1,b1)], [(2,a2),(2,b2)], ...]
   groups :: [[(PS,PN)]]
   groups = groupBy ((==) `on` fst)
                    (sort (concatMap extract ps))
@@ -34,6 +32,41 @@ makeSegmentMap ps = m where
 
   m = M.fromList (map regroup groups)
 
-makeGraph = makeSegmentMap
+class Dual t where
+  bar :: t -> t
+
+instance Dual Dir where
+  bar F = B
+  bar B = F
+
+instance Dual Segment where
+  bar (a,b) = (b,a)
+
+instance Dual Node where
+  bar (a,b) = (bar a, bar b)
+
+instance Dual Edge where
+  bar (a,b) = (bar a, bar b)
+
+-- return the other end of the segment
+other :: Segment -> PN -> PN
+other (a,b) n = a+b - n -- if a == n then b else a
+
+-- compute the derived graph from the PNode info
+makeGraph :: [PNode] -> [Edge]
+makeGraph ps = reversals ++ transitions where
+  m = makeSegmentMap ps
+  reversals   = [((s',d), bar (s',d))
+                | s  <- M.elems m,
+                  s' <- [s, bar s],
+                  d  <- [F,B]]
+  transitions = [e'
+                | PSwitch n t b1 b2 <- ps,
+                  b <- [b1,b2],
+                  d <- [F,B],
+                  e <- [(((o t n,     n), d),
+                         ((n,     o b n), d))],
+                  e' <- [e, bar e]]
+  o s n = other (m M.! s) n
 
 main = do print . makeGraph =<< file "sample1.txt"
