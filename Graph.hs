@@ -56,17 +56,20 @@ other (a,b) n = a+b - n -- if a == n then b else a
 makeGraph :: [PNode] -> [Edge]
 makeGraph ps = reversals ++ transitions where
   m = makeSegmentMap ps
-  reversals   = [((s',d), bar (s',d))
-                | s  <- M.elems m,
-                  s' <- [s, bar s],
-                  d  <- [F,B]]
+  reversals   = [(n, bar n)
+                | s  <- M.elems m
+                , s' <- [s, bar s]
+                , d  <- [F,B]
+                , n  <- [(s',d)]
+                ]
   transitions = [e'
-                | PSwitch n t b1 b2 <- ps,
-                  b <- [b1,b2],
-                  d <- [F,B],
-                  e <- [(((o t n,     n), d),
-                         ((n,     o b n), d))],
-                  e' <- [e, bar e]]
+                | PSwitch n t b1 b2 <- ps
+                , b <- [b1,b2]
+                , d <- [F,B]
+                , e <- [(((o t n,     n), d),
+                        ((n,     o b n), d))]
+                , e' <- [e, bar e]
+                ]
   o s n = other (m M.! s) n
 
 main = do print . makeGraph =<< file "sample1.txt"
