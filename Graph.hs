@@ -46,7 +46,7 @@ instance Dual Node where
   bar (a,b) = (bar a, bar b)
 
 instance Dual Edge where
-  bar (a,b) = (bar a, bar b)
+  bar (a,b) = (bar b, bar a)
 
 -- return the other end of the segment
 other :: Segment -> PN -> PN
