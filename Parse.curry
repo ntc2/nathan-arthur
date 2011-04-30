@@ -45,3 +45,4 @@ main = do
        print d
        e <- parseFile "sample2.txt"
        print e
+
