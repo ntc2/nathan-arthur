@@ -1,2 +1,22 @@
+In ascii diagrams, the arrow segment is the trunk of the switch.
+
+
 sample1.txt, sample2.txt: samples from assignment description.
+
 triangle.txt: three switches in a triangle
+
+transform-bug.different-segments-same-endpoints.txt:
+
+  n1 --s1-- n2 <--\
+           /      |
+          s3      s2
+           \      |
+  n4 --s4-- n3 <--/
+
+transform-bug.trunk-branch-self-loop.txt:
+
+  n1 --s1-- n2 <--\
+           /      |
+           |      s2
+           \      |
+            \-----/
