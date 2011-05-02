@@ -11,8 +11,8 @@ data Dir = F | B
 opposite F = B
 opposite B = F
 
--- A Node in the transformed graph. (Point A, Point B, Going from A to B?, Facing direction of motion?)
-type Node = ((Int, Int), Dir)
+-- A Node in the transformed graph. ((Point A, Point B), Edge ID, Facing direction of motion?)
+type Node = ((Int, Int), Int, Dir)
 
 -- A graph as an adjacency list
 type Graph = FM Node [Node]
@@ -20,7 +20,7 @@ type Graph = FM Node [Node]
 toGraph :: [PNode] -> Graph
 toGraph points = nodes
   where segments = toSegments points
-        nodes = switchsToNodes points (segmentsToNodes (eltsFM segments) (emptyFM (<)))
+        nodes = switchsToNodes points (segmentsToNodes (fmToList segments) (emptyFM (<)))
         --nodes = segmentsToNodes segments 1 (emptyFM (<))
 
         -- si = segment index, pi = point index
@@ -31,9 +31,9 @@ toGraph points = nodes
         switchsToNodes tmp@((PSwitch pi ti b1i b2i) : pnts) ns = 
                                      {-trace ("Switch " ++ (show (tmp, ns)) ++ "\n") $-}
                                      switchsToNodes pnts (addListToFM_C (++) ns $ concatMap (\d-> [
-                                                         (((oti, pi), d), [((pi, ob1i), d), ((pi, ob2i), d)]),
-                                                         (((ob1i, pi), d), [((pi, oti), d)]),
-                                                         (((ob2i, pi), d), [((pi, oti), d)])
+                                                         (((oti, pi), ti, d), [((pi, ob1i), b1i, d), ((pi, ob2i), b2i, d)]),
+                                                         (((ob1i, pi), b1i, d), [((pi, oti), ti, d)]),
+                                                         (((ob2i, pi), b2i, d), [((pi, oti), ti, d)])
                                                          ]) [F, B])
                                 where oti = other ti pi
                                       ob1i = other b1i pi
@@ -41,11 +41,11 @@ toGraph points = nodes
         switchsToNodes ((PEndPoint _ _) : pnts) ns = switchsToNodes pnts ns
         switchsToNodes [] pnts = pnts
 
-        segmentsToNodes ([(t1, p1), (t2, p2)] : segs) ns = 
+        segmentsToNodes ((ei, [(t1, p1), (t2, p2)]) : segs) ns = 
                                       {-trace ("segs2nodes " ++ (show ns) ++ "\n") $-}
                                       segmentsToNodes segs (addListToFM_C (++) ns $ concatMap (\d -> [
-                                             (((p1, p2), d), [((p2, p1), opposite d)]), 
-                                             (((p2, p1), d), [((p1, p2), opposite d)])
+                                             (((p1, p2), ei, d), [((p2, p1), ei, opposite d)]), 
+                                             (((p2, p1), ei, d), [((p1, p2), ei, opposite d)])
                                              ]) [F, B])
         segmentsToNodes [] ns = ns
 

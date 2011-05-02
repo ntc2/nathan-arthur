@@ -10,7 +10,7 @@ import IO
 import System
 
 nodeToIdent :: Node -> String
-nodeToIdent ((a, b), d) = "n_"++(show a)++"_"++(show b)++"_"++(show d)
+nodeToIdent ((a, b), e, d) = "n_"++(show a)++"_"++(show b)++"_"++(show e)++"_"++(show d)
 
 graphToDot :: Graph -> Bool -> String
 graphToDot g grouping = "digraph {\n" ++ (if grouping then groups l else "") ++ (concatMap h l) ++ "}\n"
@@ -22,7 +22,7 @@ graphToDot g grouping = "digraph {\n" ++ (if grouping then groups l else "") ++ 
                             "subgraph cluster_" ++ show a ++ "_" ++ show b ++ " {"++  
                               concatMap ((++";\n") . nodeToIdent) (map fst these) ++"}\n"++groups rest
                                           where these, rest free
-                                                (((a,b), _),_) = head these
+                                                (((a,b), _, _),_) = head these
             groups [] = ""
 
 {-getNodesForEdge these rest 
@@ -30,10 +30,10 @@ graphToDot g grouping = "digraph {\n" ++ (if grouping then groups l else "") ++ 
      --& these =:= permute [((a,b),F),((b,a),F),((a,b),B),((b,a),B)] = r
                                     where r free -}
 
-getNodesForEdge (n@(((a,b),_),_):ns) = (these, rest)
+getNodesForEdge (n@(((a,b),_,_),_):ns) = (these, rest)
         where these = n : filter matches ns
               rest = filter (not . matches) ns
-              matches (((oa, ob),_),_) = (a, b) == (oa, ob) || (a, b) == (ob, oa)
+              matches (((oa, ob),_,_),_) = (a, b) == (oa, ob) || (a, b) == (ob, oa)
 
 pnodesToDot pns = "graph {\n" ++ (h (eltsFM segs)) ++ "}\n"
             where segs = toSegments pns
