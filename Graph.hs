@@ -1,15 +1,18 @@
 {-# LANGUAGE TypeSynonymInstances #-}
 module Graph where
 
+import System.Environment (getArgs)
+
 import Data.List (groupBy, sort)
 import Data.Function (on)
 
 import qualified Data.Map as M
 import Parse
 
-type Segment = (PN, PN)
-data Dir = F | B deriving (Eq,Show) -- direction
-type Node = (Segment, Dir)
+type Segment = (PN,PN) -- (from, to)
+type NamedSegment = (PS, Segment) -- (id, (from,to))
+data Dir = F | B deriving (Eq,Show) -- train direction
+type Node = (NamedSegment, Dir)
 type Edge = (Node, Node)
 
 -- | eliminate self segments via phantom nodes and segments
@@ -57,8 +60,11 @@ instance Dual Dir where
 instance Dual Segment where
   bar (a,b) = (b,a)
 
+instance Dual NamedSegment where
+  bar (id,s) = (id, bar s)
+
 instance Dual Node where
-  bar (a,b) = (bar a, bar b)
+  bar (ns,d) = (bar ns, bar d)
 
 instance Dual Edge where
   bar (a,b) = (bar b, bar a)
@@ -72,7 +78,7 @@ makeGraph :: [PNode] -> [Edge]
 makeGraph ps = reversals ++ transitions where
   m = makeSegmentMap ps
   reversals   = [(n, bar n)
-                | s  <- M.elems m
+                | s  <- M.assocs m
                 , s' <- [s, bar s]
                 , d  <- [F,B]
                 , n  <- [(s',d)]
@@ -81,10 +87,11 @@ makeGraph ps = reversals ++ transitions where
                 | PSwitch n t b1 b2 <- ps
                 , b <- [b1,b2]
                 , d <- [F,B]
-                , e <- [(((o t n,     n), d),
-                        ((n,      o b n), d))]
+                , e <- [(((t, (o t n,      n)), d),
+                         ((b, (n,      o b n)), d))]
                 , e' <- [e, bar e]
                 ]
   o s n = other (m M.! s) n
 
-main = do print . makeGraph . phantomize =<< file "sample1.txt"
+test f = do print . makeGraph . phantomize =<< file f
+main = do test . (!! 0) =<< getArgs
