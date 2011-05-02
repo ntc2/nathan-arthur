@@ -12,6 +12,21 @@ data Dir = F | B deriving (Eq,Show) -- direction
 type Node = (Segment, Dir)
 type Edge = (Node, Node)
 
+-- | eliminate self segments via phantom nodes and segments
+phantomize :: [PNode] -> [PNode]
+phantomize = concatMap f where
+  -- this is easier to understand if you draw a picture ...
+  f (PSwitch n t b1 b2) | t  == b1 = [ PEndPoint (-n) (-t)
+                                     , PEndPoint (-n)   t
+                                     , PSwitch n t (-t) b2]
+                        | t  == b2 = [ PEndPoint (-n) (-t)
+                                     , PEndPoint (-n)   t
+                                     , PSwitch n t b1 (-t)]
+                        | b1 == b2 = [ PEndPoint (-n) (-b1)
+                                     , PEndPoint (-n)   b1
+                                     , PSwitch n t b1 (-b1)]
+  f p = [p]
+
 -- map segment numbers (PS) to their node pair
 makeSegmentMap :: [PNode] -> M.Map PS Segment
 makeSegmentMap ps = m where
@@ -67,9 +82,9 @@ makeGraph ps = reversals ++ transitions where
                 , b <- [b1,b2]
                 , d <- [F,B]
                 , e <- [(((o t n,     n), d),
-                        ((n,     o b n), d))]
+                        ((n,      o b n), d))]
                 , e' <- [e, bar e]
                 ]
   o s n = other (m M.! s) n
 
-main = do print . makeGraph =<< file "sample1.txt"
+main = do print . makeGraph . phantomize =<< file "sample1.txt"
