@@ -10,7 +10,9 @@ import IO
 import System
 
 nodeToIdent :: Node -> String
-nodeToIdent ((a, b), e, d) = "n_"++(show a)++"_"++(show b)++"_"++(show e)++"_"++(show d)
+nodeToIdent ((a, b), e, d) = "n_"++(nshow a)++"_"++(nshow b)++"_"++(nshow e)++"_"++(show d)
+nshow n | n < 0 = "n" ++ show (-n)
+        | otherwise = show n 
 
 graphToDot :: Graph -> Bool -> String
 graphToDot g grouping = "digraph {\n" ++ (if grouping then groups l else "") ++ (concatMap h l) ++ "}\n"
@@ -38,7 +40,7 @@ getNodesForEdge (n@(((a,b),_,_),_):ns) = (these, rest)
 pnodesToDot pns = "graph {\n" ++ (h (eltsFM segs)) ++ "}\n"
             where segs = toSegments pns
                   h ([(t1, n1), (t2, n2)] : ss) = 
-                      show n1 ++ " -- " ++ show n2 ++ "[" ++ attrs t2 t1 ++ "];\n" ++ h ss
+                      nshow n1 ++ " -- " ++ nshow n2 ++ "[" ++ attrs t2 t1 ++ "];\n" ++ h ss
                   h [] = ""
                   attrs h t = "arrowhead=" ++ arrowType h ++ ",arrowtail=" ++ arrowType t
                   arrowType True = "normal"

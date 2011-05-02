@@ -54,7 +54,17 @@ toSegments pns = toSegments' pns (emptyFM (<))
 toSegments' ((PEndPoint ni ei) : ns) segs = 
                      toSegments' ns (addListToFM_C (++) segs [(ei, [(False,ni)])]) -- Add End Point Edge
 toSegments' ((PSwitch ni ti e1i e2i) : ns) segs = 
-                     toSegments' ns (addListToFM_C (++) segs 
+                     if ti == e1i || ti == e2i then
+                        trace "Loop\n" $
+                        let (eli, enli) = if ti == e1i then (e1i, e2i) else (e2i, e1i) in
+                          -- Add fantom segment
+                          toSegments' ns (addListToFM_C (++) segs 
+                                         [(ti, [(True,ni)]),  
+                                         (eli, [(False,-ni)]), 
+                                         (-eli, [(False,ni),(False,-ni)]), 
+                                         (enli, [(False,ni)])])                 
+                     else
+                        toSegments' ns (addListToFM_C (++) segs 
                                          [(ti, [(True,ni)]),  -- Add Trunk Edge
                                          (e1i, [(False,ni)]), -- Add Branch Segments
                                          (e2i, [(False,ni)])])
