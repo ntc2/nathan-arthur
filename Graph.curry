@@ -19,8 +19,9 @@ type Graph = FM Node [Node]
 
 toGraph :: [PNode] -> Graph
 toGraph points = nodes
-  where segments = toSegments points
-        nodes = switchsToNodes points (segmentsToNodes (fmToList segments) (emptyFM (<)))
+  where pns = removeLoops points
+        segments = toSegments pns
+        nodes = switchsToNodes pns (segmentsToNodes (fmToList segments) (emptyFM (<)))
         --nodes = segmentsToNodes segments 1 (emptyFM (<))
 
         -- si = segment index, pi = point index
@@ -49,12 +50,24 @@ toGraph points = nodes
                                              ]) [F, B])
         segmentsToNodes [] ns = ns
 
+removeLoops pns = concatMap h pns
+            where h pn@(PEndPoint ni ei) = [pn]
+                  h pn@(PSwitch ni ti e1i e2i) = 
+                     if ti == e1i then
+                        [PEndPoint (-ni) (-ti), PEndPoint (-ni) ti, PSwitch ni ti (-ti) e2i] 
+                     else if ti == e2i then
+                        [PEndPoint (-ni) (-ti), PEndPoint (-ni) ti, PSwitch ni ti e1i (-ti)]
+                     else if e1i == e2i then
+                        [PEndPoint (-ni) (-e1i), PEndPoint (-ni) e1i, PSwitch ni ti e1i (-e1i)]
+                     else
+                        [pn]
+
 -- This needs to be changed to detect segments that start at a trunk and go to a branch of the same switch. It should add a psudo node on the loop.
 toSegments pns = toSegments' pns (emptyFM (<))
 toSegments' ((PEndPoint ni ei) : ns) segs = 
                      toSegments' ns (addListToFM_C (++) segs [(ei, [(False,ni)])]) -- Add End Point Edge
 toSegments' ((PSwitch ni ti e1i e2i) : ns) segs = 
-                     if ti == e1i || ti == e2i then
+                     {-if ti == e1i || ti == e2i then
                         trace "Loop\n" $
                         let (eli, enli) = if ti == e1i then (e1i, e2i) else (e2i, e1i) in
                           -- Add fantom segment
@@ -63,7 +76,7 @@ toSegments' ((PSwitch ni ti e1i e2i) : ns) segs =
                                          (eli, [(False,-ni)]), 
                                          (-eli, [(False,ni),(False,-ni)]), 
                                          (enli, [(False,ni)])])                 
-                     else
+                     else-}
                         toSegments' ns (addListToFM_C (++) segs 
                                          [(ti, [(True,ni)]),  -- Add Trunk Edge
                                          (e1i, [(False,ni)]), -- Add Branch Segments

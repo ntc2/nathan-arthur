@@ -37,14 +37,14 @@ getNodesForEdge (n@(((a,b),_,_),_):ns) = (these, rest)
               rest = filter (not . matches) ns
               matches (((oa, ob),_,_),_) = (a, b) == (oa, ob) || (a, b) == (ob, oa)
 
-pnodesToDot pns = "graph {\n" ++ (h (eltsFM segs)) ++ "}\n"
+pnodesToDot pns = "graph {\n" ++ (h (fmToList segs)) ++ "}\n"
             where segs = toSegments pns
-                  h ([(t1, n1), (t2, n2)] : ss) = 
-                      nshow n1 ++ " -- " ++ nshow n2 ++ "[" ++ attrs t2 t1 ++ "];\n" ++ h ss
+                  h ((e, [(t1, n1), (t2, n2)]) : ss) = 
+                      nshow n1 ++ " -- " ++ nshow n2 ++ "[" ++ attrs t2 t1 ++ ",label=\"" ++ show e ++ "\"];\n" ++ h ss
                   h [] = ""
                   attrs h t = "arrowhead=" ++ arrowType h ++ ",arrowtail=" ++ arrowType t
-                  arrowType True = "normal"
-                  arrowType False = "inv"
+                  arrowType True = "dot"
+                  arrowType False = "none"
 
 
 renderDot :: String -> String -> String -> IO ()
