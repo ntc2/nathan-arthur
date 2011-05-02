@@ -11,14 +11,16 @@ import System
 
 nodeToIdent :: Node -> String
 nodeToIdent ((a, b), e, d) = "n_"++(nshow a)++"_"++(nshow b)++"_"++(nshow e)++"_"++(show d)
+nodeToLabel ((a, b), e, d) = "("++(show a)++", "++(show b)++") "++(show d)++" e="++(show e)
 nshow n | n < 0 = "n" ++ show (-n)
         | otherwise = show n 
 
 graphToDot :: Graph -> Bool -> String
 graphToDot g grouping = "digraph {\n" ++ (if grouping then groups l else "") ++ (concatMap h l) ++ "}\n"
       where l = fmToList g
-            h (n, es) = concatMap (\e -> ni ++ " -> " ++ nodeToIdent e ++ ";\n") es
+            h (n, es) = nodestmt ++ concatMap (\e -> ni ++ " -> " ++ nodeToIdent e ++ ";\n") es
                   where ni = nodeToIdent n
+                        nodestmt = ni ++ "[label=\""++nodeToLabel n++"\"];\n"
             
             groups ns | getNodesForEdge ns =:= (these, rest) = 
                             "subgraph cluster_" ++ show a ++ "_" ++ show b ++ " {"++  
@@ -40,7 +42,10 @@ getNodesForEdge (n@(((a,b),_,_),_):ns) = (these, rest)
 pnodesToDot pns = "graph {\n" ++ (h (fmToList segs)) ++ "}\n"
             where segs = toSegments pns
                   h ((e, [(t1, n1), (t2, n2)]) : ss) = 
-                      nshow n1 ++ " -- " ++ nshow n2 ++ "[" ++ attrs t2 t1 ++ ",label=\"" ++ show e ++ "\"];\n" ++ h ss
+                       labelnode n1 ++ labelnode n2
+                         ++ nshow n1 ++ " -- " ++ nshow n2 
+                         ++ "[" ++ attrs t2 t1 ++ ",label=\"" ++ show e ++ "\"];\n" ++ h ss
+                      where labelnode n = nshow n ++ "[label=\"" ++ show n ++ "\"];\n"
                   h [] = ""
                   attrs h t = "arrowhead=" ++ arrowType h ++ ",arrowtail=" ++ arrowType t
                   arrowType True = "dot"

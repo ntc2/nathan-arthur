@@ -22,7 +22,6 @@ toGraph points = nodes
   where pns = removeLoops points
         segments = toSegments pns
         nodes = switchsToNodes pns (segmentsToNodes (fmToList segments) (emptyFM (<)))
-        --nodes = segmentsToNodes segments 1 (emptyFM (<))
 
         -- si = segment index, pi = point index
         other :: Int -> Int -> Int 
@@ -30,12 +29,12 @@ toGraph points = nodes
         other si pi | (lookupFM segments si) =:= Just [(unknown, oi), (unknown, pi)] = oi where oi free
 
         switchsToNodes tmp@((PSwitch pi ti b1i b2i) : pnts) ns = 
-                                     {-trace ("Switch " ++ (show (tmp, ns)) ++ "\n") $-}
-                                     switchsToNodes pnts (addListToFM_C (++) ns $ concatMap (\d-> [
-                                                         (((oti, pi), ti, d), [((pi, ob1i), b1i, d), ((pi, ob2i), b2i, d)]),
-                                                         (((ob1i, pi), b1i, d), [((pi, oti), ti, d)]),
-                                                         (((ob2i, pi), b2i, d), [((pi, oti), ti, d)])
-                                                         ]) [F, B])
+                           {-trace ("Switch " ++ (show (tmp, ns)) ++ "\n") $-}
+                           switchsToNodes pnts (addListToFM_C (++) ns $ concatMap (\d-> [
+                                         (((oti, pi), ti, d), [((pi, ob1i), b1i, d), ((pi, ob2i), b2i, d)]),
+                                         (((ob1i, pi), b1i, d), [((pi, oti), ti, d)]),
+                                         (((ob2i, pi), b2i, d), [((pi, oti), ti, d)])
+                                        ]) [F, B])
                                 where oti = other ti pi
                                       ob1i = other b1i pi
                                       ob2i = other b2i pi
@@ -62,26 +61,16 @@ removeLoops pns = concatMap h pns
                      else
                         [pn]
 
--- This needs to be changed to detect segments that start at a trunk and go to a branch of the same switch. It should add a psudo node on the loop.
 toSegments pns = toSegments' pns (emptyFM (<))
 toSegments' ((PEndPoint ni ei) : ns) segs = 
-                     toSegments' ns (addListToFM_C (++) segs [(ei, [(False,ni)])]) -- Add End Point Edge
+          toSegments' ns (addListToFM_C (++) segs [(ei, [(False,ni)])]) -- Add End Point Edge
 toSegments' ((PSwitch ni ti e1i e2i) : ns) segs = 
-                     {-if ti == e1i || ti == e2i then
-                        trace "Loop\n" $
-                        let (eli, enli) = if ti == e1i then (e1i, e2i) else (e2i, e1i) in
-                          -- Add fantom segment
-                          toSegments' ns (addListToFM_C (++) segs 
-                                         [(ti, [(True,ni)]),  
-                                         (eli, [(False,-ni)]), 
-                                         (-eli, [(False,ni),(False,-ni)]), 
-                                         (enli, [(False,ni)])])                 
-                     else-}
-                        toSegments' ns (addListToFM_C (++) segs 
-                                         [(ti, [(True,ni)]),  -- Add Trunk Edge
-                                         (e1i, [(False,ni)]), -- Add Branch Segments
-                                         (e2i, [(False,ni)])])
-toSegments' [] segs = if all ((2==) . length) (eltsFM segs) then segs else error $ "There is a segment without 2 points"
+          toSegments' ns (addListToFM_C (++) segs 
+                          [(ti, [(True,ni)]),  -- Add Trunk Edge
+                           (e1i, [(False,ni)]), -- Add Branch Segments
+                           (e2i, [(False,ni)])])
+toSegments' [] segs = if all ((2==) . length) (eltsFM segs) then segs 
+                         else error $ "There is a segment without 2 points"
 
 p0 = [(PEndPoint 1 1),(PSwitch 2 1 2 3),(PEndPoint 3 2),(PEndPoint 4 3)]
 p1 = [(PEndPoint 1 1),(PSwitch 2 1 2 12),(PEndPoint 3 4),(PSwitch 4 5 3 4),(PSwitch 5 3 2 7),(PSwitch 6 12 7 8),(PSwitch 7 6 5 9),(PEndPoint 8 6),(PSwitch 9 8 9 10),(PSwitch 10 13 10 11),(PEndPoint 11 11),(PEndPoint 12 13)]
