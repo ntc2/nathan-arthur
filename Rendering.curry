@@ -35,12 +35,11 @@ getNodesForEdge (n@(((a,b),_),_):ns) = (these, rest)
               rest = filter (not . matches) ns
               matches (((oa, ob),_),_) = (a, b) == (oa, ob) || (a, b) == (ob, oa)
 
-pnodesToDot pns = "graph {\n" ++ (h segs 1) ++ "}\n"
-            where segs = toSegments pns (emptyDefaultArray (const []) :: Array [(Bool,Int)])
-                  h ss i | [(t1, n1), (t2, n2)] =:= ss ! i = 
-                      show n1 ++ " -- " ++ show n2 ++ "[" ++ attrs t2 t1 ++ "];\n" ++ h ss (i+1)
-                           where t1, t2, n1, n2 free
-                  h ss i | [] =:= ss ! i = ""
+pnodesToDot pns = "graph {\n" ++ (h (eltsFM segs)) ++ "}\n"
+            where segs = toSegments pns
+                  h ([(t1, n1), (t2, n2)] : ss) = 
+                      show n1 ++ " -- " ++ show n2 ++ "[" ++ attrs t2 t1 ++ "];\n" ++ h ss
+                  h [] = ""
                   attrs h t = "arrowhead=" ++ arrowType h ++ ",arrowtail=" ++ arrowType t
                   arrowType True = "normal"
                   arrowType False = "inv"
