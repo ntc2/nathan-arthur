@@ -41,8 +41,8 @@ parseFile fn = do
                getSomeValue $ parse (filter (/='\r') s)
 
 main = do
-       d <- parseFile "sample1.txt"
+       d <- parseFile "input/sample1.txt"
        print d
-       e <- parseFile "sample2.txt"
+       e <- parseFile "input/sample2.txt"
        print e
 

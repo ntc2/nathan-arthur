@@ -1,5 +1,9 @@
-In ascii diagrams, the arrow segment is the trunk of the switch.
+./input contains rail-graph specifications
 
+In ascii diagrams below, the arrow segment is the trunk of the switch.
+
+Summary of input files
+======================
 
 sample1.txt, sample2.txt: samples from assignment description.
 
@@ -20,3 +24,5 @@ transform-bug.trunk-branch-self-loop.txt:
            |      s2
            \      |
             \-----/
+
+testdata.txt: the sample data from the assignment page
