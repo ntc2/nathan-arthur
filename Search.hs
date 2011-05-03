@@ -32,8 +32,8 @@ reversalWeight ((_,    d),(_,     d')) =
 type PrioQ = H.PQ (Double, Node)
 type NodeWeighting = M.Map Node Double
 -- TODO: parent pointers, execution cost
-dijkstra :: EdgeWeighting -> Adj -> Node -> NodeWeighting
-dijkstra weight adj n = search d v q where
+dijkstra :: EdgeWeighting -> Node -> Adj -> NodeWeighting
+dijkstra weight n adj = search d v q where
   search :: NodeWeighting -> S.Set Node -> PrioQ -> NodeWeighting
   search d visited q = case H.extractMin q of
     Nothing -> d         -- skip already visited
@@ -60,4 +60,4 @@ testWeighting w f = print . map w . makeGraph . phantomize =<< file f
 
 -- find distances from first node in adj
 -- testDijkstra distanceWeight "./sample1.txt"
-testDijkstra w f = print . (\adj -> dijkstra w adj (M.keys adj !! 0)) . makeAdj . makeGraph . phantomize =<< file f
+testDijkstra w f = print . (\adj -> dijkstra w (M.keys adj !! 0) adj) . makeAdj . makeGraph . phantomize =<< file f
