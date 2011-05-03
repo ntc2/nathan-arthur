@@ -30,18 +30,17 @@ reversalWeight ((_,    d),(_,     d')) =
 -- \Theta(V), so no asymptotic penalty.
 
 type PrioQ = H.PQ (Double, Node)
-type Adj = M.Map Node [Node]
 type NodeWeighting = M.Map Node Double
 -- TODO: parent pointers, execution cost
 dijkstra :: EdgeWeighting -> Adj -> Node -> NodeWeighting
 dijkstra weight adj n = search d v q where
   search :: NodeWeighting -> S.Set Node -> PrioQ -> NodeWeighting
   search d visited q = case H.extractMin q of
-    Nothing -> d
+    Nothing -> d         -- skip already visited
     Just ((w,n'), q') -> if n' `S.member` visited
                          then search d  visited  q'
                          else search d' visited' q'' where
-      -- update weights
+      -- update distances
       (d',q'') = foldr update (d,q') (adj M.! n') where
         update :: Node -> (NodeWeighting, PrioQ) -> (NodeWeighting, PrioQ)
         update m (d,q) = if d M.! m > w'
@@ -51,9 +50,14 @@ dijkstra weight adj n = search d v q where
           where w' = w + weight (n',m)
       -- mark visited
       visited' = S.insert n' visited
-  d = undefined -- M.insert (0,n) $ foldr
-  v = S.insert n S.empty
+  d = M.insert n 0
+    $ M.fromList [(m, read "Infinity") | m <- M.keys adj]
+  v = S.empty
   q = H.insert (0,n) H.empty
 
 -- Search.test distanceWeight "./transform-bug.trunk-branch-self-loop.txt"
-test w f = print . map w . makeGraph . phantomize =<< file f
+testWeighting w f = print . map w . makeGraph . phantomize =<< file f
+
+-- find distances from first node in adj
+-- testDijkstra distanceWeight "./sample1.txt"
+testDijkstra w f = print . (\adj -> dijkstra w adj (M.keys adj !! 0)) . makeAdj . makeGraph . phantomize =<< file f

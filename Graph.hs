@@ -93,7 +93,8 @@ makeGraph ps = reversals ++ transitions where
                 ]
   o s n = other (m M.! s) n
 
-makeAdj :: [Edge] -> M.Map Node [Node]
+type Adj = M.Map Node [Node]
+makeAdj :: [Edge] -> Adj
 makeAdj es = m where
   groups :: [[Edge]]
   groups = groupBy ((==) `on` fst)
@@ -103,4 +104,5 @@ makeAdj es = m where
   m = M.fromList (map regroup groups)
 
 test f = do print . makeGraph . phantomize =<< file f
+testAdj f = do print . makeAdj . makeGraph . phantomize =<< file f
 main = do test . (!! 0) =<< getArgs
