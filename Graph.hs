@@ -50,7 +50,9 @@ makeSegmentMap ps = m where
 
   m = M.fromList (map regroup groups)
 
+-- things that can be flipped
 class Dual t where
+  -- should satisfy 'bar . bar = id'
   bar :: t -> t
 
 instance Dual Dir where
