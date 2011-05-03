@@ -44,7 +44,7 @@ file f = do p <- parseFromFile lines f
               Left e -> error $ show e -- ??? what's the right way to fail on parse error
               Right p -> return p
 
-main = do
+main' = do
        d <- file "sample1.txt"
        print d
        e <- file "sample2.txt"

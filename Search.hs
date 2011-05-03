@@ -1,6 +1,9 @@
 module Search where
 
 -- cabal install meldable-heap
+--
+-- d'oh: Data.Map and Data.Set support heap operations, so no need for
+-- this ... TODO: use one of those instead
 import qualified Data.MeldableHeap as H
 
 import qualified Data.Map as M

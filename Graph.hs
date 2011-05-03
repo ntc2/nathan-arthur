@@ -107,4 +107,4 @@ makeAdj es = m where
 
 test f = do print . makeGraph . phantomize =<< file f
 testAdj f = do print . makeAdj . makeGraph . phantomize =<< file f
-main = do test . (!! 0) =<< getArgs
+main' = do test . (!! 0) =<< getArgs
