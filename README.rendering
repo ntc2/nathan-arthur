@@ -1,0 +1,7 @@
+Rendering using graphviz is tricky for the larger graphs. I was able to produce an SVG file of the entire test data in the pure graph form. But it was weird. Here are some notes:
+
+* the dot layout engine is far to slow to handle the large graphs.
+* outputting a large graph to a raster format will not go well because the image will be too big.
+* neato is fast on large graphs but does not produce good layouts. It can be fixed somewhat by giving it -Goverlap=false. This tells it to prevent nodes from overlapping however is causes the output image to be HUGE (almost 300k x 300k pixels).
+
+-Arthur

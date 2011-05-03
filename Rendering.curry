@@ -15,29 +15,41 @@ nodeToLabel ((a, b), e, d) = "("++(show a)++", "++(show b)++") "++(show d)++" e=
 nshow n | n < 0 = "n" ++ show (-n)
         | otherwise = show n 
 
+weightedgraphToDot :: WeightedGraph -> Bool -> String
+weightedgraphToDot = graphToDot' snd (\_ (w,_)-> "label=\"" ++ show w ++ "\"")
+
 graphToDot :: Graph -> Bool -> String
-graphToDot g grouping = "digraph {\n" ++ (if grouping then groups l else "") ++ (concatMap h l) ++ "}\n"
+graphToDot = graphToDot' id (const $ const "")
+
+graphToDot' :: (a -> Node) -> (Node -> a -> String) -> (FM Node [a]) -> Bool -> String
+graphToDot' unwrapNode edgeAttr g grouping = "digraph {\n" ++ (if grouping then groups l else "") ++ (concatMap h l) ++ "}\n"
       where l = fmToList g
-            h (n, es) = nodestmt ++ concatMap (\e -> ni ++ " -> " ++ nodeToIdent e ++ ";\n") es
+            h :: (Node, [a]) -> String
+            h (n, es) = nodestmt ++ concatMap (\e -> ni ++ " -> " ++ nodeToIdent (unwrapNode e) ++ "[" ++ edgeAttr n e ++ "];\n") es
                   where ni = nodeToIdent n
                         nodestmt = ni ++ "[label=\""++nodeToLabel n++"\"];\n"
             
-            groups ns | getNodesForEdge ns =:= (these, rest) = 
-                            "subgraph cluster_" ++ show a ++ "_" ++ show b ++ " {"++  
+            groups :: [(Node, [b])] -> String
+            groups ns | getNodesForEdge ns =:= (these, rest) =
+                            "subgraph cluster_" ++ nshow a ++ "_" ++ nshow b ++ " {"++  
                               concatMap ((++";\n") . nodeToIdent) (map fst these) ++"}\n"++groups rest
                                           where these, rest free
-                                                (((a,b), _, _),_) = head these
+                                                ((a,b), _, _) = fst $ head these
             groups [] = ""
+
 
 {-getNodesForEdge these rest 
      | length r =:= (length these) + (length rest) & splitSet r =:= (these, rest) {-& length these =:= 4-} = r
      --& these =:= permute [((a,b),F),((b,a),F),((a,b),B),((b,a),B)] = r
                                     where r free -}
 
-getNodesForEdge (n@(((a,b),_,_),_):ns) = (these, rest)
-        where these = n : filter matches ns
+getNodesForEdge :: [(Node, b)] -> ([(Node, b)], [(Node, b)])
+getNodesForEdge (orig@(nn,_):ns) | nn =:= n & n =:= ((a,b),unknown,unknown) = (these, rest)
+        where these = orig : filter matches ns
               rest = filter (not . matches) ns
-              matches (((oa, ob),_,_),_) = (a, b) == (oa, ob) || (a, b) == (ob, oa)
+              matches (nn,_) | nn =:= ((oa, ob),unknown,unknown) = (a, b) == (oa, ob) || (a, b) == (ob, oa)
+                      where oa, ob free
+              n, a, b free
 
 pnodesToDot pns = "graph {\n" ++ (h (fmToList segs)) ++ "}\n"
             where segs = toSegments pns
@@ -51,6 +63,15 @@ pnodesToDot pns = "graph {\n" ++ (h (fmToList segs)) ++ "}\n"
                   arrowType True = "dot"
                   arrowType False = "none"
 
+
+saveDot :: String -> String -> IO ()
+saveDot baseFn dot = do
+          --let dot = toDot g grouping
+          let dotFn = (baseFn ++ ".dot")
+          f <- openFile dotFn WriteMode
+          hPutStrLn f dot
+          hClose f
+          done
 
 renderDot :: String -> String -> String -> IO ()
 renderDot baseFn renderer dot = do
