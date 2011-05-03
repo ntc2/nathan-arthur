@@ -11,7 +11,7 @@ import Parse
 
 type Segment = (PN,PN) -- (from, to)
 type NamedSegment = (PS, Segment) -- (id, (from,to))
-data Dir = F | B deriving (Eq,Show) -- train direction
+data Dir = F | B deriving (Eq,Ord,Show) -- train direction
 type Node = (NamedSegment, Dir)
 type Edge = (Node, Node)
 
@@ -92,6 +92,15 @@ makeGraph ps = reversals ++ transitions where
                 , e' <- [e, bar e]
                 ]
   o s n = other (m M.! s) n
+
+makeAdj :: [Edge] -> M.Map Node [Node]
+makeAdj es = m where
+  groups :: [[Edge]]
+  groups = groupBy ((==) `on` fst)
+                   (sort es)
+  regroup :: [Edge] -> (Node,[Node])
+  regroup ((k,v):xs) = (k, v:map snd xs)
+  m = M.fromList (map regroup groups)
 
 test f = do print . makeGraph . phantomize =<< file f
 main = do test . (!! 0) =<< getArgs
