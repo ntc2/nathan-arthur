@@ -51,17 +51,21 @@ getNodesForEdge (orig@(nn,_):ns) | nn =:= n & n =:= ((a,b),unknown,unknown) = (t
                       where oa, ob free
               n, a, b free
 
-pnodesToDot pns = "graph {\n" ++ (h (fmToList segs)) ++ "}\n"
+pnodesToDot' :: (Int -> String) -> [PNode] -> String
+pnodesToDot' segAttrFunc pns = "graph {\n" ++ (h (fmToList segs)) ++ "}\n"
             where segs = toSegments pns
                   h ((e, [(t1, n1), (t2, n2)]) : ss) = 
                        labelnode n1 ++ labelnode n2
                          ++ nshow n1 ++ " -- " ++ nshow n2 
-                         ++ "[" ++ attrs t2 t1 ++ ",label=\"" ++ show e ++ "\"];\n" ++ h ss
+                         ++ "[" ++ attrs t2 t1 ++ ","++ segAttrFunc e ++"];\n" ++ h ss
                       where labelnode n = nshow n ++ "[label=\"" ++ show n ++ "\"];\n"
                   h [] = ""
                   attrs h t = "arrowhead=" ++ arrowType h ++ ",arrowtail=" ++ arrowType t
                   arrowType True = "dot"
                   arrowType False = "none"
+
+pnodesToDot :: [PNode] -> String
+pnodesToDot = pnodesToDot' (\e-> "label=\"" ++ show e ++ "\"")
 
 
 saveDot :: String -> String -> IO ()
