@@ -16,6 +16,20 @@ type Node = ((Int, Int), Int, Dir)
 
 -- A graph as an adjacency list
 type Graph = FM Node [Node]
+type WeightedGraph = FM Node [(Int, Node)]
+
+weightGraph wf g = listToFM (<) l'
+         where l = fmToList g
+               l' = map h l
+               h (n, adj) = (n, map (\o -> (wf n o, o)) adj)
+
+basicWeightFun f s@(_, sid, _) d = if sid < 0 then 0 else f s d
+switchBackWeight :: Node -> Node -> Int
+switchBackWeight = basicWeightFun (\(sega, segida, dira) (segb, segidb, dirb) -> 
+                                     if segida == segidb && dira /= dirb then 1 else 0)
+segmentsWeight :: Node -> Node -> Int
+segmentsWeight = basicWeightFun (\(sega, segida, dira) (segb, segidb, dirb) -> 
+                                     if segida /= segidb then 1 else 0)
 
 toGraph :: [PNode] -> Graph
 toGraph points = nodes
