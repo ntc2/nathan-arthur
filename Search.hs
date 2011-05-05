@@ -1,11 +1,5 @@
 module Search where
 
--- cabal install meldable-heap
---
--- d'oh: Data.Map and Data.Set support heap operations, so no need for
--- this ... TODO: use one of those instead
-import qualified Data.MeldableHeap as H
-
 import qualified Data.Map as M
 import qualified Data.Set as S
 import Data.Maybe
@@ -32,32 +26,40 @@ reversalWeight ((_,    d),(_,     d')) =
 -- large as E, as opposed to V when no duplicates, but we have E =
 -- \Theta(V), so no asymptotic penalty.
 
-type PrioQ = H.PQ (Double, Node)
+type PrioQ         = S.Set (Double, Node)
 type NodeWeighting = M.Map Node Double
+type StepCount = Integer
+type ParentPtr = M.Map Node Node
 -- TODO: parent pointers, execution cost
-dijkstra :: EdgeWeighting -> Node -> Adj -> NodeWeighting
-dijkstra weight n adj = search d v q where
-  search :: NodeWeighting -> S.Set Node -> PrioQ -> NodeWeighting
-  search d visited q = case H.extractMin q of
-    Nothing -> d         -- skip already visited
-    Just ((w,n'), q') -> if n' `S.member` visited
-                         then search d  visited  q'
-                         else search d' visited' q'' where
+dijkstra :: EdgeWeighting -> Node -> Adj -> (NodeWeighting, ParentPtr)
+dijkstra weight n adj = search' d v q pp where
+  search' :: NodeWeighting -> S.Set Node -> PrioQ -> ParentPtr
+          -> (NodeWeighting, ParentPtr)
+  search' d visited q pp = case S.minView q of
+    Nothing          -> (d,pp)
+    Just ((w,n), q') -> if n `S.member` visited
+                         -- skip already visited
+                         then search' d  visited  q'  pp
+                         else search' d' visited' q'' pp' where
       -- update distances
-      (d',q'') = foldr update (d,q') (adj M.! n') where
-        update :: Node -> (NodeWeighting, PrioQ) -> (NodeWeighting, PrioQ)
-        update m (d,q) = if d M.! m > w'
-                         then (M.insert m w' d,
-                               H.insert (w',m) q)
-                         else (d,q)
-          where w' = w + weight (n',m)
+      (d',q'',pp') = foldr update (d,q',pp) (adj M.! n) where
+        update :: Node -> (NodeWeighting, PrioQ, ParentPtr)
+               -> (NodeWeighting, PrioQ, ParentPtr)
+        update m (d,q,pp) = if d M.! m > w'
+                         then (M.insert m w'   d
+                              ,S.insert (w',m) q
+                              ,M.insert m n    pp)
+                         else (d,q,pp)
+          where w' = w + weight (n,m)
       -- mark visited
-      visited' = S.insert n' visited
+      visited' = S.insert n visited
+  -- initial values:
+  -- distance is 0 to self and infinity o/w
   d = M.insert n 0
-    $ M.fromList [(m, read "Infinity") | m <- M.keys adj]
-  v = S.empty
-  q = H.insert (0,n) H.empty
-
+    $ M.fromList [(m, 1/0) | m <- M.keys adj]
+  v = S.empty -- nothing visited
+  q = S.insert (0,n) S.empty -- self on queue and dist 0
+  pp = M.empty -- no parent pointers
 -- Search.test distanceWeight "./transform-bug.trunk-branch-self-loop.txt"
 testWeighting w f = print . map w . makeGraph . phantomize =<< file f
 
