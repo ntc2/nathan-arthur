@@ -61,9 +61,10 @@ dijkstra weight n adj = search' d v q pp where
   pp = M.empty               -- no parent pointers
 
 extractPath :: ParentPtrs -> Node -> [Node]
-extractPath pp n = case  n `M.lookup` pp of
-  Nothing -> []
-  Just n' -> n' : extractPath pp n'
+extractPath pp n = reverse $ f pp n where
+  f pp n = case  n `M.lookup` pp of
+             Nothing -> []
+             Just n' -> n' : f pp n'
 
 -- Search.test distanceWeight "./transform-bug.trunk-branch-self-loop.txt"
 testWeighting w f = print . map w . makeGraph . phantomize =<< file f

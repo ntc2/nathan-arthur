@@ -10,6 +10,8 @@ import System.IO
 import Data.List
 import Data.Function
 
+import Debug.Trace
+
 import Graph
 import Parse
 import Search
@@ -25,7 +27,7 @@ weight x = if x == read "Infinity"
 type WeightedGraph = M.Map ArthurNode [(Int, ArthurNode)]
 makeWeightedGraph :: EdgeWeighting -> Node -> Adj -> WeightedGraph
 makeWeightedGraph w n adj = wg where
-  d  = dijkstra w n adj
+  d  = fst $ dijkstra w n adj
   wg = M.mapKeys node
      $ M.map (map ((weight . (d M.!)) &&& node)) adj
 
@@ -57,10 +59,11 @@ swap (a, b) = (b, a)
 -- create graphviz edge labels
 segmentLabeling :: EdgeWeighting -> Node -> Adj -> [(PS,String)]
 segmentLabeling w n adj = labeling where
-  d = M.toList $ dijkstra w n adj
-  sid = fst . fst -- segment id
-  groups = groupBy ((==) `on` sid . fst) d
-  label pairs@([(((i,_),_),_),_,_,_]) = (i, pairs)
+  (d, pp) = dijkstra w n adj
+  ds = extractPath pp ((16,(212,318)),F) `traceShow` M.toList d
+  sid = fst . fst . fst -- segment id
+  groups = groupBy ((==) `on` sid) ds
+  label pairs@([e,_,_,_]) = (sid e, pairs)
   labeling = [(i,(pf "label=\"%d %s\"" i $ lf l) :: String)
              | g <- groups, let l@(i,ps) = label g]
   -- Compute the label require a specific facing if you return to the same segment 
