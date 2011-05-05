@@ -9,6 +9,7 @@ import System.Environment (getArgs)
 import System.IO
 import Data.List
 import Data.Function
+import Control.Applicative
 
 import Debug.Trace
 
@@ -60,7 +61,7 @@ swap (a, b) = (b, a)
 segmentLabeling :: EdgeWeighting -> Node -> Adj -> [(PS,String)]
 segmentLabeling w n adj = labeling where
   (d, pp) = dijkstra w n adj
-  ds = extractPath pp ((16,(212,318)),F) `traceShow` M.toList d
+  ds = M.toList d
   sid = fst . fst . fst -- segment id
   groups = groupBy ((==) `on` sid) ds
   label pairs@([e,_,_,_]) = (sid e, pairs)
@@ -74,22 +75,35 @@ segmentLabeling w n adj = labeling where
                                                 else "Impossible"
              | otherwise = "any " ++ (show $ minOfAll l)
 
+nodesForSegment sid sm = [((sid,(a,b)),d) | let s = sm M.! sid, (a,b) <- [s, bar s], d <- [F,B]]
+
 p = putStrLn
 pf = printf
 
-makeCurry' :: EdgeWeighting -> Node -> FilePath -> IO ()
-makeCurry' w n f = do
+makeCurry' :: EdgeWeighting -> Node -> PS -> M.Map PS Segment -> FilePath -> IO ()
+makeCurry' w ns se sm f = do
+  adj <- pNodesToAdj <$> file f
+  let (d, pp) = dijkstra w ns adj
+  let nodes = nodesForSegment se sm
+  let ne = minimumBy (compare `on` (d M.!)) nodes
+  let sid = fst . fst
+  let nodes = extractPath pp ne
+  hPutStrLn stderr $ show nodes
+  let sids = (map sid $ nodes) ++ [se] -- hack: extractPath is buggy ...
+  hPutStrLn stderr $ show sids
+  hPutStrLn stderr $ show $ length sids  
   p "import Maybe"
   p ""
   p "import Graph"
   p "import Rendering"
   p "import Parse"
   p ""
-  sl <- return . segmentLabeling w n . pNodesToAdj =<< file f
+  sl <- (segmentLabeling w ns . pNodesToAdj) <$> file f
   pf "f k = fromJust $ lookup k %s\n" $ show sl
+  pf "path = %s\n" $ show sids
   pf "main = do pnodes <- parseFile \"%s\"\n" f
   p  "          renderDot \"tmp\" \"dot\""
-  pf "            (pnodesToDot' f pnodes)\n"
+  pf "            (pnodesToDot' f path pnodes)\n"
 
 makeCurry :: EdgeWeighting -> Node -> FilePath -> IO ()
 makeCurry w n f = do
@@ -102,12 +116,18 @@ makeCurry w n f = do
   pf "         (weightedgraphToDot (listToFM (<) %s) False)\n"
      =<< convert w n f
 
+-- usage: runhaskell Render.hs [d | r] START [y | n] END GRAPH > tmp.curry && pakcs -r tmp.curry
+--
+-- where START and END are segment ids, and [y | n] is flip
 main = do
-  [ws,ns,f] <- getArgs
-  sm <- return . makeSegmentMap =<< file f
+  [ws,sss,flips,ses,f] <- getArgs
+  sm <- makeSegmentMap <$> file f
+  let flip = if flips == "y" then bar else id
   let w = if ws == "d" then distanceWeight
           else if ws == "r" then reversalWeight
                else error $ "unknown weight function: " ++ ws
-      n = ((read ns, sm M.! read ns),F) :: Node
-  makeCurry' w n f
-  hPutStrLn stderr $ "search started from: " ++ show n
+      ss = read sss
+      ns = ((ss, flip $ sm M.! ss),F) :: Node
+      se = read ses
+  makeCurry' w ns se sm f
+  hPutStrLn stderr $ "search started from: " ++ show ns
