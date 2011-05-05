@@ -25,8 +25,7 @@ phantomize = concatMap f where
                         | t  == b2 = [ PEndPoint (-n) (-t)
                                      , PEndPoint (-n)   t
                                      , PSwitch n t b1 (-t)]
-                        | b1 == b2 = [ PEndPoint (-n) (-b1)
-                                     , PEndPoint (-n)   b1
+                        | b1 == b2 = [ PThru (-n) b1 (-b1)
                                      , PSwitch n t b1 (-b1)]
   f p = [p]
 
@@ -37,6 +36,7 @@ makeSegmentMap ps = m where
   extract :: PNode -> [(PS,PN)]
   extract (PEndPoint n s)     = [(s,n)]
   extract (PSwitch n t b1 b2) = [(t,n), (b1,n), (b2,n)]
+  extract (PThru n b1 b2)     = [(b1,n), (b2,n)]
 
   -- group the extracted segment info by segment:
   --   [[(1,a1),(1,b1)], [(2,a2),(2,b2)], ...]
@@ -77,7 +77,7 @@ other (a,b) n = a+b - n -- if a == n then b else a
 
 -- compute the derived graph from the PNode info
 makeGraph :: [PNode] -> [Edge]
-makeGraph ps = reversals ++ transitions where
+makeGraph ps = reversals ++ transitions ++ fantomTransitions where
   m = makeSegmentMap ps
   reversals   = [(n, bar n)
                 | s  <- M.assocs m
@@ -93,6 +93,14 @@ makeGraph ps = reversals ++ transitions where
                          ((b, (n,      o b n)), d))]
                 , e' <- [e, bar e]
                 ]
+  fantomTransitions = [e'
+                      | PThru n b1 b2 <- ps
+                      --, b <- [b1,b2]
+                      , d <- [F,B]
+                      , e <- [(((b1, (o b1 n,      n)), d),
+                               ((b2, (n,      o b2 n)), d))]
+                      , e' <- [e, bar e]
+                      ]
   o s n = other (m M.! s) n
 
 type Adj = M.Map Node [Node]

@@ -12,6 +12,7 @@ type PN = Int -- node type in parse input
 type PS = Int -- segment type in parse input
 data PNode = PEndPoint PN PS
            | PSwitch PN PS PS PS
+           | PThru PN PS PS
              deriving Show
 
 -- ??? how to do lexeme version tim described (Text.Parsec.Token) ?
