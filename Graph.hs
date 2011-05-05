@@ -9,6 +9,8 @@ import Data.Function (on)
 import qualified Data.Map as M
 import Parse
 
+import Debug.Trace
+
 type Segment = (PN,PN) -- (from, to)
 type NamedSegment = (PS, Segment) -- (id, (from,to))
 data Dir = F | B deriving (Eq,Ord,Show) -- train direction
@@ -36,7 +38,7 @@ makeSegmentMap ps = m where
   extract :: PNode -> [(PS,PN)]
   extract (PEndPoint n s)     = [(s,n)]
   extract (PSwitch n t b1 b2) = [(t,n), (b1,n), (b2,n)]
-  extract (PThru n b1 b2)     = [(b1,n), (b2,n)]
+  extract (PThru n b1 b2)     = {-traceShow b1 $-} [(b1,n), (b2,n)]
 
   -- group the extracted segment info by segment:
   --   [[(1,a1),(1,b1)], [(2,a2),(2,b2)], ...]
@@ -46,7 +48,7 @@ makeSegmentMap ps = m where
 
   -- convert to association list format
   regroup :: [(PS,PN)] -> (PS,Segment)
-  regroup [(s1,n1),(s2,n2)] | s1 == s2 = (s1,(n1,n2)) -- s1 == s2 is a sanity check
+  regroup [(s1,n1),(s2,n2)] | s1 == s2 = {-trace ("seg" ++ show s1) $-} (s1,(n1,n2)) -- s1 == s2 is a sanity check
 
   m = M.fromList (map regroup groups)
 

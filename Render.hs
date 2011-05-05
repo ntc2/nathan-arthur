@@ -1,4 +1,4 @@
-{-# LANGUAGE NoMonomorphismRestriction #-}
+{-# LANGUAGE NoMonomorphismRestriction, BangPatterns #-}
 module Render where
 
 -- hi tech ascii FFI ...
@@ -79,6 +79,7 @@ segmentLabeling w n adj = labeling where
 nodesForSegment sid sm = [((sid,(a,b)),d) | let s = sm M.! sid, (a,b) <- [s, bar s], d <- [F,B]]
 
 p = putStrLn
+pe = hPutStrLn stderr
 pf = printf
 
 comment description s = do
@@ -87,13 +88,13 @@ comment description s = do
 
 makeCurry' :: String -> EdgeWeighting -> Node -> PS -> M.Map PS Segment -> FilePath -> IO ()
 makeCurry' out w ns se sm f = do
-  adj <- pNodesToAdj <$> file f
-  let (d, pp) = dijkstra w ns adj
+  !adj <- pNodesToAdj <$> file f
+  let (!d, !pp) = dijkstra w ns adj
   --let nodes = nodesForSegment se sm
-  let nodes = case ns of ((sid,(a,b)),d) -> [((sid,(a,b)),bar d), ((sid,(b,a)),d)]
-  let ne = minimumBy (compare `on` (\n -> (d M.! n, length $ extractPath pp n))) nodes
-  let sid = fst . fst
-  let nodes = extractPath pp ne
+  let !nodes = case ns of ((sid,(a,b)),d) -> [((sid,(a,b)),bar d), ((sid,(b,a)),d)]
+  let !ne = minimumBy (compare `on` (\n -> (d M.! n, length $ extractPath pp n))) nodes
+  let sid = fst . fst 
+  let !nodes = extractPath pp ne
   comment "params" out
   comment "path long" $ show nodes
   let sids = (map sid $ nodes) ++ [se] -- hack: extractPath is buggy ...
@@ -129,7 +130,7 @@ makeCurry w n f = do
 -- where START and END are segment ids, and [y | n] is flip
 main = do
   [name,ws,sss,flips,ses,f] <- getArgs
-  sm <- makeSegmentMap <$> file f
+  sm <- (makeSegmentMap . phantomize) <$> file f
   let flip = if flips == "y" then bar else id
   let w = if ws == "d" then distanceWeight
           else if ws == "r" then reversalWeight
