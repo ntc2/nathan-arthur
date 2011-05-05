@@ -89,7 +89,8 @@ makeCurry' :: String -> EdgeWeighting -> Node -> PS -> M.Map PS Segment -> FileP
 makeCurry' out w ns se sm f = do
   adj <- pNodesToAdj <$> file f
   let (d, pp) = dijkstra w ns adj
-  let nodes = nodesForSegment se sm
+  --let nodes = nodesForSegment se sm
+  let nodes = case ns of ((sid,(a,b)),d) -> [((sid,(a,b)),bar d), ((sid,(b,a)),d)]
   let ne = minimumBy (compare `on` (\n -> (d M.! n, length $ extractPath pp n))) nodes
   let sid = fst . fst
   let nodes = extractPath pp ne
