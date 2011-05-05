@@ -42,6 +42,18 @@ convert w n f = return
 pNodesToAdj :: [PNode] -> Adj
 pNodesToAdj = makeAdj . makeGraph . phantomize
 
+-- This is the original print all rendering
+allInformation = id
+-- This rendered the cost of the shortest path for all directions of travel and facings
+minOfAll (_,ps) = truncate $ minimum (map snd ps)
+-- This rendered the cost of the shortest path for either directions of travel 
+-- where the train faces from s to d
+minOfFacing (s,d) (i,ps) = truncate $ minimum (map snd ps')
+    where ps' = filter (\(((_,(a,b)),facing),_)-> (facing == F && (a,b) == (s,d)) 
+                                                  || (facing == B && (a,b) == (d,s)) ) ps
+
+swap (a, b) = (b, a)
+
 -- create graphviz edge labels
 segmentLabeling :: EdgeWeighting -> Node -> Adj -> [(PS,String)]
 segmentLabeling w n adj = labeling where
@@ -49,8 +61,15 @@ segmentLabeling w n adj = labeling where
   sid = fst . fst -- segment id
   groups = groupBy ((==) `on` sid . fst) d
   label pairs@([(((i,_),_),_),_,_,_]) = (i, pairs)
-  labeling = [(i,(pf "label=\"%s\"" $ show l) :: String)
-             | g <- groups, l@(i,_) <- [label g]]
+  labeling = [(i,(pf "label=\"%d %s\"" i $ lf l) :: String)
+             | g <- groups, let l@(i,ps) = label g]
+  -- Compute the label require a specific facing if you return to the same segment 
+  -- but allowing any facing if you are going to a different segment
+  lf l@(i,_) | i == (fst $ fst $ n) = let cost = minOfFacing (swap $ snd $ fst $ n) l in
+                                      -- Ugly hack with a constant below but it will be big enough for all our graphs.
+                                      "rev " ++ if cost < 1000000 then show cost 
+                                                else "Impossible"
+             | otherwise = "any " ++ (show $ minOfAll l)
 
 p = putStrLn
 pf = printf
