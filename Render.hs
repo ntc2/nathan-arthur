@@ -10,6 +10,7 @@ import System.IO
 import Data.List
 import Data.Function
 import Control.Applicative
+import System.FilePath.Posix
 
 import Debug.Trace
 
@@ -80,18 +81,24 @@ nodesForSegment sid sm = [((sid,(a,b)),d) | let s = sm M.! sid, (a,b) <- [s, bar
 p = putStrLn
 pf = printf
 
-makeCurry' :: EdgeWeighting -> Node -> PS -> M.Map PS Segment -> FilePath -> IO ()
-makeCurry' w ns se sm f = do
+comment description s = do
+  pf "-- %s: %s\n" description s
+  hPutStrLn stderr (description ++ ": " ++ s)
+
+makeCurry' :: String -> EdgeWeighting -> Node -> PS -> M.Map PS Segment -> FilePath -> IO ()
+makeCurry' out w ns se sm f = do
   adj <- pNodesToAdj <$> file f
   let (d, pp) = dijkstra w ns adj
   let nodes = nodesForSegment se sm
-  let ne = minimumBy (compare `on` (d M.!)) nodes
+  let ne = minimumBy (compare `on` (\n -> (d M.! n, length $ extractPath pp n))) nodes
   let sid = fst . fst
   let nodes = extractPath pp ne
-  hPutStrLn stderr $ show nodes
+  comment "params" out
+  comment "path long" $ show nodes
   let sids = (map sid $ nodes) ++ [se] -- hack: extractPath is buggy ...
-  hPutStrLn stderr $ show sids
-  hPutStrLn stderr $ show $ length sids  
+  comment "path" $ show sids
+  comment "length path" $ show $ length sids
+  comment "weight path" $ show $ d M.! ne
   p "import Maybe"
   p ""
   p "import Graph"
@@ -102,7 +109,7 @@ makeCurry' w ns se sm f = do
   pf "f k = fromJust $ lookup k %s\n" $ show sl
   pf "path = %s\n" $ show sids
   pf "main = do pnodes <- parseFile \"%s\"\n" f
-  p  "          renderDot \"tmp\" \"dot\""
+  pf "          renderDot \"%s\" \"dot\"" out
   pf "            (pnodesToDot' f path pnodes)\n"
 
 makeCurry :: EdgeWeighting -> Node -> FilePath -> IO ()
@@ -120,7 +127,7 @@ makeCurry w n f = do
 --
 -- where START and END are segment ids, and [y | n] is flip
 main = do
-  [ws,sss,flips,ses,f] <- getArgs
+  [name,ws,sss,flips,ses,f] <- getArgs
   sm <- makeSegmentMap <$> file f
   let flip = if flips == "y" then bar else id
   let w = if ws == "d" then distanceWeight
@@ -129,5 +136,5 @@ main = do
       ss = read sss
       ns = ((ss, flip $ sm M.! ss),F) :: Node
       se = read ses
-  makeCurry' w ns se sm f
+  makeCurry' name w ns se sm f
   hPutStrLn stderr $ "search started from: " ++ show ns
