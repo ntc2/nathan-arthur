@@ -31,11 +31,16 @@ segmentsWeight :: Node -> Node -> Int
 segmentsWeight = basicWeightFun (\(sega, segida, dira) (segb, segidb, dirb) -> 
                                      if segida /= segidb then 1 else 0)
 
+
+graphTransformCost :: [PNode] -> Int
+graphTransformCost pns = (3 * length pns) + (sizeFM $ fst $ toSegments pns)
+
 toGraph :: [PNode] -> Graph
 toGraph points = nodes
-  where pns = removeLoops points
-        segments = toSegments pns
-        nodes = switchsToNodes pns (segmentsToNodes (fmToList segments) (emptyFM (<)))
+  where (pns, removeLoopsSteps) = removeLoops points
+        (segments, toSegmentsSteps) = toSegments pns
+        nodes = switchsToNodes pns segNodes
+        segNodes = segmentsToNodes (fmToList segments) (emptyFM (<))
 
         -- si = segment index, pi = point index
         other :: Int -> Int -> Int 
@@ -53,7 +58,7 @@ toGraph points = nodes
                                       ob1i = other b1i pi
                                       ob2i = other b2i pi
         switchsToNodes ((PEndPoint _ _) : pnts) ns = switchsToNodes pnts ns
-        switchsToNodes [] pnts = pnts
+        switchsToNodes [] pnts = pnts 
 
         segmentsToNodes ((ei, [(t1, p1), (t2, p2)]) : segs) ns = 
                                       {-trace ("segs2nodes " ++ (show ns) ++ "\n") $-}
@@ -63,7 +68,7 @@ toGraph points = nodes
                                              ]) [F, B])
         segmentsToNodes [] ns = ns
 
-removeLoops pns = concatMap h pns
+removeLoops pns = (concatMap h pns, length pns)
             where h pn@(PEndPoint ni ei) = [pn]
                   h pn@(PSwitch ni ti e1i e2i) = 
                      if ti == e1i then
@@ -75,7 +80,7 @@ removeLoops pns = concatMap h pns
                      else
                         [pn]
 
-toSegments pns = toSegments' pns (emptyFM (<))
+toSegments pns = (toSegments' pns (emptyFM (<)), length pns)
 toSegments' ((PEndPoint ni ei) : ns) segs = 
           toSegments' ns (addListToFM_C (++) segs [(ei, [(False,ni)])]) -- Add End Point Edge
 toSegments' ((PSwitch ni ti e1i e2i) : ns) segs = 
