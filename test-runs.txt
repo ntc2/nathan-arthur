@@ -1,14 +1,20 @@
+generating test runs
+
 $ for i in `seq 1 5`; sed -n "$(((RANDOM % 98) + 1))p" input/testdata.txt
 
 $ function runtest () { name=$1_$2_$3_$4_$(basename $5 .txt); runhaskell Render.hs $name "$@" > $name.curry && ~/local/opt/pakcs/bin/pakcs -r $name.curry; }
 
 $ runtest r 105 y 16 "./input/testdata.txt"
 
-303 -> 214
-203 -> 408
-508 -> 114
-112 -> 114
-216 -> 520
+r weight tests
+
+303 -> 214 y
+203 -> 408 y
+508 -> 101 y
+112 -> 114 y
+216 -> 520 n
+
+d weight tests
 
 514
 413
